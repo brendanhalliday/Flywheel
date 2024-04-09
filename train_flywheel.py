@@ -1,7 +1,6 @@
 # %%
 """Import libraries"""
 
-import gymnasium as gym
 import math
 import random
 import matplotlib
@@ -342,4 +341,4 @@ for i_episode in range(num_episodes):
 
 # %%
 
-torch.save(policy_net.state_dict(), PATH)
+torch.save(policy_net.state_dict())
