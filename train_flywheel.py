@@ -20,7 +20,7 @@ import torch.nn.functional as F
 # env = gym.make("CartPole-v1")#, render_mode="human")
 
 L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-env = TopBalanceFlyWheelEnv(L, R, m1, m2)
+env = TopBalanceFlyWheelEnv(L, R, m1, m2, fps=30)
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
