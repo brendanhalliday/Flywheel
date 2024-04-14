@@ -15,7 +15,7 @@ from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 from itertools import count
 #%%
 "Define Subroutines"
-def select_action(policy_net, state):
+def select_action(policy, state):
     
     # do not compute gradient in contect of backpropagation 
     # this helpd with memeory management
@@ -37,7 +37,7 @@ def select_action(policy_net, state):
         # -> .indices returns the indices of the max row 
         # elements
         # ->  .view(1,1) reshapes the tensor as a 1 by 1 tensor
-        return policy_net(state).max(1).indices.view(1, 1)
+        return policy(state).max(1).indices.view(1, 1)
     
 
 #%%
@@ -55,8 +55,8 @@ n_actions = env.action_space.n
 state, info = env.reset()
 n_observations = len(state)
 
-the_model = fly.DQN(n_observations, n_actions).to(device)
-the_model.load_state_dict(torch.load(PATH))
+model = fly.DQN(n_observations, n_actions).to(device)
+model.load_state_dict(torch.load(PATH))
 env.init_render()
 
 # if GPU is to be used
@@ -65,7 +65,7 @@ state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 
 for t in count():
     env.clock.tick(60)
-    action = select_action(the_model, state)
+    action = select_action(model, state)
     observation, reward, terminated, truncated, _ = env.step(action.item())
     reward = torch.tensor([reward], device=device)
     done = terminated or truncated
