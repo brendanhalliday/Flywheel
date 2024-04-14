@@ -46,7 +46,11 @@ class TopBalanceFlyWheelEnv(gym.Env):
             max_w2      : maximum angular velocity of flywheel
             g           : acceleration due to gravity
             fps         : framerate
-            time        : time in seconds of one episode
+            init_time   : time in seconds of one episode
+            random_init_position: if true, the pendulum will start
+                                    at some random initial position 
+                                    normally distributed about
+                                    theta1 = pi + 0.1
 
         """
         # store game fps

@@ -1,3 +1,7 @@
+"""
+This scipt trains the inverted flywheel pendulum
+"""
+
 # %%
 """Import libraries"""
 
@@ -8,7 +12,7 @@ import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 
-from flywheel_ballance import TopBalanceFlyWheelEnv
+from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 
 import torch
 import torch.nn as nn
@@ -20,7 +24,9 @@ import torch.nn.functional as F
 # env = gym.make("CartPole-v1")#, render_mode="human")
 
 L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-env = TopBalanceFlyWheelEnv(L, R, m1, m2, fps=30)
+env = SwingUpFlyWheelEnv(L, R, m1, m2)
+# env = TopBalanceFlyWheelEnv(L, R, m1, m2)
+
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
@@ -169,18 +175,21 @@ def select_action(state):
 
 
 episode_durations = []
-
+total_rewards = []
 
 def plot_durations(show_result=False):
+    """
+    This function should plot reward. 
+    """
     plt.figure(1)
-    durations_t = torch.tensor(episode_durations, dtype=torch.float)
+    durations_t = torch.tensor(total_rewards, dtype=torch.float)
     if show_result:
         plt.title('Result')
     else:
         plt.clf()
         plt.title('Training...')
     plt.xlabel('Episode')
-    plt.ylabel('Duration')
+    plt.ylabel('Reward')
     plt.plot(durations_t.numpy())
     # Take 100 episode averages and plot them too
     if len(durations_t) >= 100:
@@ -269,76 +278,79 @@ def optimize_model():
 
 #%%
 """Training Loop"""
-if torch.cuda.is_available():
-    num_episodes = 600
-else:
-    num_episodes = 200
-
-for i_episode in range(num_episodes):
-    # Initialize the environment and get its state
-
-    state, info = env.reset()
-    state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-    if i_episode != num_episodes - 1:
-
-        for t in count():
-            action = select_action(state)
-            observation, reward, terminated, truncated, _ = env.step(action.item())
-            reward = torch.tensor([reward], device=device)
-
-            if terminated:
-                next_state = None
-            else:
-                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-
-            # Perform one step of the optimization (on the policy network)
-            optimize_model()
-
-            # Soft update of the target network's weights
-            # θ′ ← τθ + (1 − τ)θ′
-            target_net_state_dict = target_net.state_dict()
-            policy_net_state_dict = policy_net.state_dict()
-
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1 - TAU)
-            target_net.load_state_dict(target_net_state_dict)
-
-            if terminated:
-                episode_durations.append(t + 1)
-                plot_durations()
-                break
-
+if __name__ == "__main__":
+    if torch.cuda.is_available():
+        num_episodes = 600
     else:
-        print('Complete')
-        plot_durations(show_result=True)
-        plt.ioff()
-        plt.show()
+        num_episodes = 100
+
+    for i_episode in range(num_episodes):
+        # Initialize the environment and get its state
+
         state, info = env.reset()
-        env.init_render()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-        for t in count():
-            env.clock.tick(60)
-            action = select_action(state)
-            observation, reward, terminated, truncated, _ = env.step(action.item())
-            reward = torch.tensor([reward], device=device)
-            done = terminated or truncated
-                # render current state
-            env.render()
-            if done:
-                env.close()
-                break
-            else:
-                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+        if i_episode != num_episodes - 1:
+            REWARD_T = 0
+            for t in count():
+                action = select_action(state)
+                observation, reward, terminated, truncated, _ = env.step(action.item())
+                REWARD_T += reward
+                reward = torch.tensor([reward], device=device)
+
+                if terminated:
+                    next_state = None
+                else:
+                    next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+
+                # Store the transition in memory
+                memory.push(state, action, next_state, reward)
+
                 # Move to the next state
                 state = next_state
-   
 
-# %%
+                # Perform one step of the optimization (on the policy network)
+                optimize_model()
 
-torch.save(policy_net.state_dict())
+                # Soft update of the target network's weights
+                # θ′ ← τθ + (1 − τ)θ′
+                target_net_state_dict = target_net.state_dict()
+                policy_net_state_dict = policy_net.state_dict()
+
+                for key in policy_net_state_dict:
+                    target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1 - TAU)
+                target_net.load_state_dict(target_net_state_dict)
+
+                if terminated:
+                    episode_durations.append(t + 1)
+                    total_rewards.append(REWARD_T)
+                    plot_durations()
+                    break
+
+        else:
+            print('Complete')
+            plot_durations(show_result=True)
+            plt.ioff()
+            plt.show()
+            state, info = env.reset()
+            env.init_render()
+            state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            for t in count():
+                env.clock.tick(60)
+                action = select_action(state)
+                observation, reward, terminated, truncated, _ = env.step(action.item())
+                reward = torch.tensor([reward], device=device)
+                done = terminated or truncated
+                    # render current state
+                env.render()
+                if done:
+                    env.close()
+                    break
+                else:
+                    next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+                    # Move to the next state
+                    state = next_state
+    
+
+    # %%
+
+    torch.save(policy_net.state_dict(), 'weights_swing.pt')

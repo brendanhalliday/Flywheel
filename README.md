@@ -1,6 +1,17 @@
-Run train_flywheel.py to train the flywheel yourself.
+Run train_flywheel_balance.py to train the flywheel yourself.
 
-There may be a problem with saving the parameters of the model at the very end of train_flywheel.py.
+This is a reinforced learning algorithm that uses a 
+Deep Q-Network (DQN) to approximate the Quality function
+to find the optimal policy.
+
+This program learns to balance the inverted flywheel pendulum from
+a off centered upright position. This means that the rod is not 100% 
+vertical in it's initial position. It must learn to counter the torque
+applied by gravity from this starting psotion.
+
+Run train_flywheel_swing.py to trian the swing up and balance version
+of the code. 
+
 
 Contact Brendan for details
 

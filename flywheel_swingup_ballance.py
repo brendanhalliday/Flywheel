@@ -16,13 +16,19 @@ import pygame
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
+import random
 
 #%%
 "Define New Gym environment"
-class FlyWheelEnv(gym.Env):
-    
-    def __init__(self, L, R, m1, m2, max_tau=0.1, max_w1=6*np.pi, 
-                 max_w2=418.9, g = 9.81, fps= 60, env_config={}):
+class SwingUpFlyWheelEnv(gym.Env):
+
+    metadata = {
+        "render_modes": ["human", "rgb_array"],
+        "render_fps": 60,
+    }
+    def __init__(self, L, R, m1, m2, max_tau=0.8, max_w1=6*np.pi, 
+                 max_w2=418.9, g = 9.81, fps= 60, init_time=30, 
+                 random_init_position=False, env_config={}):
         """
         Initializes the flywheel pendulum class
         
@@ -40,27 +46,32 @@ class FlyWheelEnv(gym.Env):
             max_w2      : maximum angular velocity of flywheel
             g           : acceleration due to gravity
             fps         : framerate
+            time        : time in seconds of one episode
 
         """
         # store game fps
         self.fps = fps
-        
+
         # Pixel size of the game window
         self.window_size = 500  
-        # store physical parameters
+
         self.theta1      = 0.
         self.theta2      = 0.
         self.w1          = 0.
         self.w2          = 0.
 
-        # self.state is [sin(theta1), cos(theta1), w1] initial
-        self.state = np.array([np.sin(self.theta1), np.cos(self.theta1), 0.])
+        # self.state is [sin(theta1), cos(theta1), w1, tanh(w2)] initial
+        self.state = np.array([np.sin(self.theta1), 
+                               np.cos(self.theta1), 
+                               self.w1,
+                               np.tanh(self.w2)])
 
         # define target state 
-        self.target = np.array([0., -1., 0.])
+        self.target = np.array([0., -1., 0., 0.])
 
         # set trial_length in sec
-        self.trial_length = 500
+        self.init_time = init_time
+        self.trial_time = init_time
 
         # set lengths and masses
         self.rod_len     = L
@@ -82,38 +93,37 @@ class FlyWheelEnv(gym.Env):
         l2 = L
         l1 = L/2
 
+        self.I1, self.I2, self.l1, self.l2  = I1, I2, l1, l2
+        self.m1, self.m2 = m1, m2
+        self.g = g
+
         # define useful constants for calculating moments of inertia
         # see ipynb file for calculations and why this makes sense
+        # compute useful constants once so the update equations need not compute them each time
+      
         A = I1 + I2 + m1 * (l1**2) + m2 * (l2**2) 
         B = l1 * m1 + l1 * m2
         C = I1 + m1 * (l1**2) + m2 * (l2**2)
-
-        # useful constant
-        const = g*B/C
+        self.const = g*B/C
         # torque terms in the equation for \ddot{\theta}_{i}
-        torque_1 = max_tau/C
-        torque_2 = max_tau*A/(I2*C)
-
-        # compute useful constants once so the update equations need not compute them each time
-        self.const = const
-        self.torque_1 = torque_1
-        self.torque_2 = torque_2
+        self.torque_1 = max_tau/C
+        self.torque_2 = max_tau*A/(I2*C)
 
         # Define the low and high values for each continuous variable
-        low  = np.array([-1.0, -1.0, -max_w1])
-        high = np.array([1.0,   1.0,  max_w1])
+        low  = np.array([-1.0, -1.0, -max_w1, -1.0])
+        high = np.array([1.0,   1.0,  max_w1, 1.0])
 
         # Create a Box space for the observation with four continuous variables
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
-        # We have 4 actions, corresponding to "torque_left", "no torque", "torque_right"
+        # We have 3 actions, corresponding to "torque_left", "no torque", "torque_right"
         self.action_space = spaces.Discrete(3)
 
         # The following dictionary maps abstract actions from `self.action_space` to
         # the direction we will walk in if that action is taken.
         # I.e. 0 corresponds to "no_right", 1 to "torque_ccw", -1 to "torque_cw"
         
-        self._action_to_direction = {0:-1, 
+        self._action_to_direction = {0:-1,
                                      1: 0, 
                                      2: 1}
 
@@ -130,13 +140,18 @@ class FlyWheelEnv(gym.Env):
         """
         Reset the environment to initial state
         """
+
         self.theta1      = 0.
         self.theta2      = 0.
         self.w1          = 0.
         self.w2          = 0.
 
-        self.state = np.array([np.sin(self.theta1), np.cos(self.theta1), 0.])
-        self.trial_length = 500
+        self.state = np.array([np.sin(self.theta1), 
+                               np.cos(self.theta1), 
+                               self.w1,
+                               np.tanh(self.w2)])
+        
+        self.trial_time = self.init_time
         info = {}
         return self.state, info
     
@@ -209,6 +224,34 @@ class FlyWheelEnv(gym.Env):
                 self.w1 = self.max_w1
         else:
             self.w1 = w1_new
+    
+
+    def KE(self):
+        """
+        """
+        w1, w2 = self.w1, self.w2
+        I1, I2, l1, l2  = self.I1, self.I2, self.l1, self.l2 
+        m1, m2 = self.m1, self.m2
+
+        return 0.5*(I1*w1**2 + I2*(w1 + w2)**2 + m1*(l1*w1)**2  + m2*(l2*w1)**2) 
+        
+
+    def PE(self):
+        """
+        """
+        l1, l2 = self.l1, self.l2 
+        m1, m2, g = self.m1, self.m2, self.g
+        t1 = self.theta1
+
+        return -g*(l1*m1 + l2*m2)*np.cos(t1)
+
+
+    def H(self):
+        """
+        Computes the total current energy
+        H = T + U
+        """
+        return self.KE() + self.PE()
 
     def step(self, action): 
         """
@@ -254,29 +297,33 @@ class FlyWheelEnv(gym.Env):
 
         # update observation state
         # the reason we don't use the y_new array is because the theta1, and theta2 are unbounded
-        self.state = np.array([np.sin(self.theta1), np.cos(self.theta1), self.w1, self.w2])
+        self.state = np.array([np.sin(self.theta1), 
+                               np.cos(self.theta1), 
+                               self.w1,
+                               np.tanh(self.w2)])
 
         # Trial done?
-        self.trial_length -= h
-        if self.trial_length <= 0:
-            terminated = True
-        else:
-            terminated = False
+        self.trial_time -= h
 
+        if self.trial_time <= 0.:
+            terminated = True
+        else:    
+            terminated = False
+        # terminate the trial if a forbidden state has been reached. 
+        
         # Give the computer a little treat
-        if self.state[1] > 0:
-            reward = (1/2)*(1 - self.state[1])
+        if not terminated:
+            if self.state[1] < np.cos(np.pi + 12*np.pi/180):
+                reward = (1/2)*(1 - self.state[1]) + (1/2)*(1 - np.abs(self.w1)/self.max_w1)
+            else:
+                reward = (1/2)*(1 - self.state[1])
         else:
-            reward = (1/2)*(1 - self.state[1]) + 1 - np.abs(self.w1)/self.max_w1
+            reward = 0
 
         # pass aditional info
         info = {}
 
-        # trnucate the trial if a forbidden state has been reached. 
-        # for the swing up and stabilize, truncated will alwasy be false
-        truncated = False
-
-        return self.state, reward, terminated, truncated, info
+        return self.state, reward, terminated, False, info
     
     def render(self):
         """
@@ -311,13 +358,22 @@ class FlyWheelEnv(gym.Env):
         pygame.draw.circle(self.window, (0, 200, 200), p2, R)
         
         # draw rod
-        pygame.draw.line(self.window,(0,100,100),p1,p2,10)
+        pygame.draw.line(self.window, (0,100,100), p1, p2, 10)
 
         # draw flywheel line
-        pygame.draw.line(self.window, (0,50,50), p2, p3,4)
+        pygame.draw.line(self.window, (0,50,50), p2, p3, 4)
         
         # display all
         pygame.display.update()
+
+    # def close():
+    #     """
+    #     Define a close function to close
+    #     the Pygame render
+    #     """
+    #     import pygame
+    #     pygame.display.quit()
+    #     pygame.quit()
 
 def pressed_to_action(keytouple):
     """
@@ -359,8 +415,8 @@ def main_function(environment, fps=60):
 #%%
 if __name__ == '__main__':
 
-    L, R, m1, m2 = 0.21, 0.085, 0.115, 0.996 # SI Units
-    environment = FlyWheelEnv(L, R, m1, m2)
+    L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
+    environment = SwingUpFlyWheelEnv(L, R, m1, m2)
     environment.init_render()
     main_function(environment)
 
