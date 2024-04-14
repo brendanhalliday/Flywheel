@@ -9,6 +9,8 @@ Date: April 13th, 2024
 
 #%%
 "Import modules"
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 import train_flywheel_swing as fly
 import torch
 from flywheel_swingup_ballance import SwingUpFlyWheelEnv
@@ -39,14 +41,34 @@ def select_action(policy, state):
         # ->  .view(1,1) reshapes the tensor as a 1 by 1 tensor
         return policy(state).max(1).indices.view(1, 1)
     
+def plot_energy(energy):
+    """
+    
+    """
+    fig, axs = plt.subplots()
+
+    
+
+def plot_phase():
+    """
+    
+    """
+
+
+
+    
 
 #%%
 "Load in weights and initiate the trained model"
-PATH = 'weights_swing.pt'
+PATH = 'weights_swing_good.pt'
 
+
+# if GPU is to be used
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
 env = SwingUpFlyWheelEnv(L, R, m1, m2)
+
 state, info = env.reset()
 # Get number of actions from gym action space
 n_actions = env.action_space.n
@@ -59,7 +81,6 @@ model = fly.DQN(n_observations, n_actions).to(device)
 model.load_state_dict(torch.load(PATH))
 env.init_render()
 
-# if GPU is to be used
 
 state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 

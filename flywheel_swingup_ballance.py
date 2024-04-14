@@ -16,8 +16,6 @@ import pygame
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-import random
-
 #%%
 "Define New Gym environment"
 class SwingUpFlyWheelEnv(gym.Env):
@@ -245,7 +243,6 @@ class SwingUpFlyWheelEnv(gym.Env):
 
         return -g*(l1*m1 + l2*m2)*np.cos(t1)
 
-
     def H(self):
         """
         Computes the total current energy
@@ -320,7 +317,8 @@ class SwingUpFlyWheelEnv(gym.Env):
         else:
             reward = 0
 
-        # pass aditional info
+        # pass aditional info such as phase plot
+        # info and total energy info 
         info = {}
 
         return self.state, reward, terminated, False, info
@@ -338,8 +336,7 @@ class SwingUpFlyWheelEnv(gym.Env):
         # such that it looks proportional to screen
         leng_ratio = self.rod_len/self.wheel_r # length of rod
         L = 150
-        R = L*(1/leng_ratio)
-
+        R = L * (1/leng_ratio)
 
         # theta2 is called since it is not contained in the 
         # self.state array
@@ -415,8 +412,12 @@ def main_function(environment, fps=60):
 #%%
 if __name__ == '__main__':
 
-    L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-    environment = SwingUpFlyWheelEnv(L, R, m1, m2)
+    # L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
+    # environment = SwingUpFlyWheelEnv(L, R, m1, m2)
+
+    L, R, m1, m2 = 0.21, 0.085, 0.115, 0.526 # SI Units
+    max_tau = 0.215
+    environment = SwingUpFlyWheelEnv(L, R, m1, m2, max_tau=max_tau)
     environment.init_render()
     main_function(environment)
 
