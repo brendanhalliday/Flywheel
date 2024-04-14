@@ -131,6 +131,8 @@ class SwingUpFlyWheelEnv(gym.Env):
         """
         import pygame
         pygame.init()
+        # self.window is our screen object that can be used for
+        # saving pngs and making movies
         self.window = pygame.display.set_mode((self.window_size, self.window_size))
         self.clock = pygame.time.Clock()
 
