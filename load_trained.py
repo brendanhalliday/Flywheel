@@ -89,7 +89,7 @@ env.init_render()
 
 state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 # save an animation
-save = True
+save = False
 if save:
 
     video = Video((500, 500))
