@@ -42,18 +42,22 @@ def select_action(policy, state):
         # ->  .view(1,1) reshapes the tensor as a 1 by 1 tensor
         return policy(state).max(1).indices.view(1, 1)
     
+
 def plot_energy(energy):
     """
-    
+    Plots energy as a for the fully
+    trained animation
     """
     fig, axs = plt.subplots()
-
+    #TODO
     
 
 def plot_phase():
     """
-    
+    Plots phase for the fully trained
+    animation
     """
+    #TODO
 
 
 
