@@ -19,3 +19,12 @@ Contact Brendan for details
 
 To install dependencies, run the following:
 pip install -r /path/to/requirements.txt
+
+Message for Nickolaos (and future Brendan):
+    If you need to use more packages, update the requirements file:
+
+    1. activate virtual envoronment. 
+    2. cd to inverted_flywheel_pendulum
+    3. python -m pip freeze > requirements.txt
+    4. Commit
+    5. Push
