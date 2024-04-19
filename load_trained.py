@@ -15,7 +15,7 @@ import train_flywheel_swing as fly
 import torch
 from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 from itertools import count
-from generate_video import Video
+from generate_video import Movie_Maker
 #%%
 "Define Subroutines"
 def select_action(policy, state):
@@ -92,7 +92,7 @@ state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 save = False
 if save:
 
-    video = Video((500, 500))
+    video = Movie_Maker((500, 500))
 
 for t in count():
     env.clock.tick(60)
@@ -104,7 +104,7 @@ for t in count():
     env.render()
     if save:
 
-        video.make_png(env.window)
+        video.png(env.window)
     if done:
         env.close()
         break
@@ -114,4 +114,4 @@ for t in count():
         state = next_state
 
 if save:
-    video.make_mp4()
+    video.mp4()

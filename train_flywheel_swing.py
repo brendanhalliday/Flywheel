@@ -55,8 +55,13 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 
-# replay memory is a cyclic buffer of bounded size that holds the transitions observed recently 
+
 class ReplayMemory(object):
+    """
+    Replay memory is a cyclic buffer of 
+    bounded size that holds the transitions 
+    observed recently
+    """
 
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
@@ -114,6 +119,7 @@ n_actions = env.action_space.n
 state, info = env.reset()
 n_observations = len(state)
 
+# initialize two idnetical neural networks with 4 -> 128 -> 128 -> 3
 policy_net = DQN(n_observations, n_actions).to(device)
 target_net = DQN(n_observations, n_actions).to(device)
 
@@ -171,7 +177,10 @@ def select_action(state):
             # -> .indices returns the indices of the max row 
             # elements
             # ->  .view(1,1) reshapes the tensor as a 1 by 1 tensor
+
+            # policy_net(state) returns action vector (dim = 3)
             return policy_net(state).max(1).indices.view(1, 1)
+        
     else:
         # return a pytorch tensor, which is like a numpy array
         # with a random action tensor
@@ -213,13 +222,14 @@ def plot_durations(show_result=False):
 # %%
 """Optimization Model"""    
 def optimize_model():
+    # while len(memory) < 128 where memory is the memory buffer with max capacity 10000
     if len(memory) < BATCH_SIZE:
         return
     # once memory is that same size as batch size,
     # we can start sampling
     transitions = memory.sample(BATCH_SIZE)
-    # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-    # detailed explanation). This converts batch-array of Transitions
+
+    # Transpose the batch This converts batch-array of Transitions
     # to Transition of batch-arrays.
     batch = Transition(*zip(*transitions))
 
