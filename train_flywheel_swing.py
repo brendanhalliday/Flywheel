@@ -9,8 +9,21 @@ import math
 import random
 import matplotlib
 import matplotlib.pyplot as plt
+
 from collections import namedtuple, deque
 from itertools import count
+
+font_size = 20
+# set font for good looking graphs
+font = {'family'  : 'serif',
+        'serif'   : ['Computer Modern Roman'],
+        'style'   : 'normal',
+        'weight'  : 'bold',
+        'size'    : font_size}
+
+matplotlib.rc('font', **font)
+plt.rcParams['figure.dpi'] = 300 # resolution on screen
+plt.rcParams.update({'font.size': font_size})
 
 from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 
@@ -198,7 +211,8 @@ def plot_durations(show_result=False):
     plt.figure(1)
     durations_t = torch.tensor(total_rewards, dtype=torch.float)
     if show_result:
-        plt.title('Result')
+        plt.grid()
+        pass
     else:
         plt.clf()
         plt.title('Training...')
@@ -233,12 +247,16 @@ def optimize_model():
     # to Transition of batch-arrays.
     batch = Transition(*zip(*transitions))
 
+    "Extract transition data in the form of tensors"
     # Compute a mask of non-final states and concatenate the batch elements
     # (a final state would've been the one after which simulation ended)
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state)), 
-                                          device=device, 
-                                          dtype=torch.bool)
+                                            batch.next_state)), 
+                                            device=device, # using CPU/GPU
+                                            dtype=torch.bool) # tensor of booleans
+    
+    # the map() function exectutes a specified function for each item in an iterable 
+    # therefore, we create a tuple of booleans 
     
     # torch.cat (concatenates a tensor by adding rows to the tensor)
     non_final_next_states = torch.cat([s for s in batch.next_state
@@ -248,11 +266,14 @@ def optimize_model():
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
+
     # Compute Q(s_t, a) - the model computes Q(s_t), 
     # then we select the columns of actions taken.
     # These are the actions which would've been 
     # taken for each batch state according to 
     # policy_net
+
+    # the dimensional output 
     state_action_values = policy_net(state_batch).gather(1, action_batch)
 
     # Compute V(s_{t+1}) for all next states.
@@ -262,7 +283,10 @@ def optimize_model():
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(BATCH_SIZE, device=device)
     with torch.no_grad():
-        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
+        # since non_final_mask is a boolean mask, using it as an index only mutates
+        # thos indices and the final_states are left at zero since final states
+        # cannot accumulate more reward by definition
+        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values # select max column value from each row
     
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch
@@ -293,6 +317,9 @@ def optimize_model():
 
 #%%
 """Training Loop"""
+# If show_process is True then after each episode, the reward will be plotted
+# else, the graph will only be shown at the end
+show_process = False
 if __name__ == "__main__":
     if torch.cuda.is_available():
         num_episodes = 600
@@ -313,7 +340,7 @@ if __name__ == "__main__":
                 reward = torch.tensor([reward], device=device)
 
                 if terminated:
-                    next_state = None
+                    next_state = None # this is important for the non_final_mask array and calculating the Q function
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
 
@@ -338,13 +365,15 @@ if __name__ == "__main__":
                 if terminated:
                     episode_durations.append(t + 1)
                     total_rewards.append(REWARD_T)
-                    plot_durations()
+                    if show_process:
+                        plot_durations()
                     break
 
         else:
             print('Complete')
             plot_durations(show_result=True)
             plt.ioff()
+            plt.savefig('swingup_training.png', dpi = 300, bbox_inches = "tight", format='png')
             plt.show()
             state, info = env.reset()
             env.init_render()
@@ -368,4 +397,4 @@ if __name__ == "__main__":
 
     # %%
 
-    torch.save(policy_net.state_dict(), 'weights_swing_under.pt')
+    # torch.save(policy_net.state_dict(), 'weights_swing_under.pt')
