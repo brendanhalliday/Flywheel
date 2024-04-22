@@ -12,6 +12,16 @@ import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 
+font_size = 20
+# set font for good looking graphs
+font = {'family'  : 'serif',
+        'serif'   : ['Computer Modern Roman'],
+        'style'   : 'normal',
+        'weight'  : 'bold',
+        'size'    : font_size}
+
+matplotlib.rc('font', **font)
+
 from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 # from flywheel_ballance import TopBalanceFlyWheelEnv
 
