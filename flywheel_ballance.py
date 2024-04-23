@@ -141,6 +141,11 @@ class TopBalanceFlyWheelEnv(gym.Env):
         self._action_to_direction = {0:-1,
                                      1: 0, 
                                      2: 1}
+        
+        self.PE_max       = -g*(l1*m1 + l2*m2)*np.cos(np.pi)
+        self.KE_trans_max = (1/2)*(m1*(l1*max_w1)**2 + m2*(l2*max_w1)**2)
+        self.KE_rot_max   = (1/2)*(I1*max_w1**2 + I2*(max_w1 + max_w2)**2)
+        self.max_energy   = self.KE_trans_max + self.KE_rot_max + self.PE_max
 
     def init_render(self):
         """
@@ -443,6 +448,7 @@ if __name__ == '__main__':
 
     L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
     environment = TopBalanceFlyWheelEnv(L, R, m1, m2)
+    print(environment.max_energy)
     environment.init_render()
     main_function(environment)
 

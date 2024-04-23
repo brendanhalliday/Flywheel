@@ -21,6 +21,7 @@ import matplotlib as mpl
 import train_flywheel_swing as fly
 import torch
 from flywheel_swingup_ballance import SwingUpFlyWheelEnv
+from flywheel_ballance import TopBalanceFlyWheelEnv
 from itertools import count
 from generate_video import Movie_Maker
 
@@ -95,14 +96,14 @@ def plot_energy_and_phase(energy, angle, velocity,
 
 #%%
 "Load in weights and initiate the trained model"
-PATH = 'weights_swing_good.pt'
-
+PATH = 'weights.pt'
 
 # if GPU is to be used
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-env = SwingUpFlyWheelEnv(L, R, m1, m2)
+env = TopBalanceFlyWheelEnv(L, R, m1, m2)
+# env = SwingUpFlyWheelEnv(L, R, m1, m2)
 
 state, info = env.reset()
 # Get number of actions from gym action space
@@ -112,12 +113,12 @@ n_actions = env.action_space.n
 state, info = env.reset()
 n_observations = len(state)
 
+# load in model with saved weights
 model = fly.DQN(n_observations, n_actions).to(device)
 model.load_state_dict(torch.load(PATH))
 env.init_render()
-
-
 state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+
 # save an animation
 save = False
 if save:
@@ -126,6 +127,7 @@ if save:
 ENERGY = []
 W = []
 THETA = []
+
 for t in count():
     env.clock.tick(60)
     action = select_action(model, state)

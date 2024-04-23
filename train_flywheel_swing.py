@@ -36,14 +36,9 @@ import torch.nn.functional as F
 """Initialize the environment"""
 # env = gym.make("CartPole-v1")#, render_mode="human")
 
-# L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-# env = SwingUpFlyWheelEnv(L, R, m1, m2)
-
 L, R, m1, m2 = 0.21, 0.085, 0.115, 0.526 # SI Units
 max_tau = 0.215
 env = SwingUpFlyWheelEnv(L, R, m1, m2, max_tau=max_tau)
-
-# env = TopBalanceFlyWheelEnv(L, R, m1, m2)
 
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()

@@ -22,8 +22,7 @@ font = {'family'  : 'serif',
 
 matplotlib.rc('font', **font)
 
-from flywheel_swingup_ballance import SwingUpFlyWheelEnv
-# from flywheel_ballance import TopBalanceFlyWheelEnv
+from flywheel_ballance import TopBalanceFlyWheelEnv
 
 import torch
 import torch.nn as nn
@@ -35,8 +34,7 @@ import torch.nn.functional as F
 # env = gym.make("CartPole-v1")#, render_mode="human")
 
 L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-env = SwingUpFlyWheelEnv(L, R, m1, m2)
-# env = TopBalanceFlyWheelEnv(L, R, m1, m2)
+env = TopBalanceFlyWheelEnv(L, R, m1, m2)
 
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -189,10 +187,15 @@ episode_durations = []
 
 
 def plot_durations(show_result=False):
+    """
+    This function should plot
+    duration vs episode number
+    """
     plt.figure(1)
     durations_t = torch.tensor(episode_durations, dtype=torch.float)
     if show_result:
-        plt.title('Result')
+        plt.grid()
+        pass
     else:
         plt.clf()
         plt.title('Training...')
@@ -290,7 +293,7 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         num_episodes = 600
     else:
-        num_episodes = 200
+        num_episodes = 100
 
     for i_episode in range(num_episodes):
         # Initialize the environment and get its state
@@ -336,6 +339,7 @@ if __name__ == "__main__":
             print('Complete')
             plot_durations(show_result=True)
             plt.ioff()
+            plt.savefig('balance_training.png', dpi = 300, bbox_inches = "tight", format='png')
             plt.show()
             state, info = env.reset()
             env.init_render()
@@ -359,4 +363,4 @@ if __name__ == "__main__":
 
     # %%
 
-    torch.save(policy_net.state_dict(), 'weights_swing.pt')
+    # torch.save(policy_net.state_dict(), 'weights_swing.pt')

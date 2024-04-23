@@ -124,6 +124,11 @@ class SwingUpFlyWheelEnv(gym.Env):
         self._action_to_direction = {0:-1,
                                      1: 0, 
                                      2: 1}
+        
+        self.PE_max       = -g*(l1*m1 + l2*m2)*np.cos(np.pi)
+        self.KE_trans_max = (1/2)*(m1*(l1*max_w1)**2 + m2*(l2*max_w1)**2)
+        self.KE_rot_max   = (1/2)*(I1*max_w1**2 + I2*(max_w1 + max_w2)**2)
+        self.max_energy   = self.KE_trans_max + self.KE_rot_max + self.PE_max
 
     def init_render(self):
         """
