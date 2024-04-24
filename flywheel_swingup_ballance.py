@@ -4,7 +4,7 @@ Author : Brendan S. Halliday
 Queen's University
 
 This program defines a new game environment class
-for the inverted flywheel pendulum
+for the inverted flywheel pendulum swing up and balance.
 All other programs for the final project should import this
 file as it is working comfortably
 

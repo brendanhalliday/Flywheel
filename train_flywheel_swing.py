@@ -1,5 +1,15 @@
 """
 This scipt trains the inverted flywheel pendulum
+to swing up and balance
+
+The algorthm was inspired by the Pytorch tutorial
+written by Adam Paszke and Mark Towers
+for training the cart-pole. The code has been
+adapted by Brendan Halliday for the flywheel.
+
+Author: Brendan Halliday
+Institute: Queen's University 
+Date: April 24th, 2024
 """
 
 # %%
@@ -315,6 +325,8 @@ def optimize_model():
 # If show_process is True then after each episode, the reward will be plotted
 # else, the graph will only be shown at the end
 show_process = False
+save=True # save weights
+
 if __name__ == "__main__":
     if torch.cuda.is_available():
         num_episodes = 600
@@ -390,6 +402,7 @@ if __name__ == "__main__":
                     state = next_state
     
 
-    # %%
-
-    # torch.save(policy_net.state_dict(), 'weights_swing_under.pt')
+# %%
+"Save weights for reloading the model later"
+if save:
+    torch.save(policy_net.state_dict(), 'weights_swing.pt')

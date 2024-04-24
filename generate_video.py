@@ -1,3 +1,12 @@
+"""
+This program is a helper module
+for saving PyGame animations
+
+Author: Brendan Halliday
+Queen's University
+Last edited: april 24th 2024
+"""
+
 import pygame
 import os
 import sys

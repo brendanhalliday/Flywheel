@@ -2,8 +2,8 @@
 This script loads the fully trained neural network
 calculated by train_flywheel.py
 
-THe program then shows an animation of the 
-flywheel with the option of saving it as well.
+The program then shows an animation of the 
+flywheel with the option of saving the animation.
 
 We finally have the option to produce energy 
 and phase plots. 
@@ -24,6 +24,9 @@ from flywheel_swingup_ballance import SwingUpFlyWheelEnv
 from flywheel_ballance import TopBalanceFlyWheelEnv
 from itertools import count
 from generate_video import Movie_Maker
+
+# if GPU is to be used
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 font_size = 20
 # set font for good looking graphs
@@ -96,14 +99,25 @@ def plot_energy_and_phase(energy, angle, velocity,
 
 #%%
 "Load in weights and initiate the trained model"
-PATH = 'weights.pt'
+situation = {'balance': True,
+             'swing': False}
 
-# if GPU is to be used
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+sit = situation['balance']
 
-L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
-env = TopBalanceFlyWheelEnv(L, R, m1, m2)
-# env = SwingUpFlyWheelEnv(L, R, m1, m2)
+# save an animation
+save = False
+
+if sit:
+    PATH = 'weights.pt'
+    L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
+    env = TopBalanceFlyWheelEnv(L, R, m1, m2)
+
+else:
+    PATH = 'weights_swing.pt'
+    L, R, m1, m2 = 0.21, 0.085, 0.115, 0.526 # SI Units
+    max_tau = 0.215 # Nm
+    env = SwingUpFlyWheelEnv(L, R, m1, m2)
+
 
 state, info = env.reset()
 # Get number of actions from gym action space
@@ -119,8 +133,7 @@ model.load_state_dict(torch.load(PATH))
 env.init_render()
 state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 
-# save an animation
-save = False
+
 if save:
     video = Movie_Maker((500, 500))
 
@@ -155,4 +168,4 @@ if save:
 
 #%%
 "Plot energy and phase plots"
-plot_energy_and_phase(ENERGY, THETA, W, save=True)
+plot_energy_and_phase(ENERGY, THETA, W, save=False)

@@ -4,7 +4,7 @@ Author : Brendan S. Halliday
 Queen's University
 
 This program defines a new game environment class
-for the inverted flywheel pendulum
+for the inverted flywheel pendulum balance
 All other programs for the final project should import this
 file as it is working comfortably
 
@@ -448,7 +448,6 @@ if __name__ == '__main__':
 
     L, R, m1, m2 = 0.7, 0.3, 0.4, 0.4 # SI Units
     environment = TopBalanceFlyWheelEnv(L, R, m1, m2)
-    print(environment.max_energy)
     environment.init_render()
     main_function(environment)
 
