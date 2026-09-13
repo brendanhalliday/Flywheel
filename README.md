@@ -1,4 +1,4 @@
-Run train_flywheel_balance.py to train the flywheel yourself.
+Run train_flywheel_balance.py to train the flywheel yourself. Read HCPC_Final_Report.pdf for background and motivation.
 
 This is a reinforced learning algorithm that uses a 
 Deep Q-Network (DQN) to approximate the Quality function
@@ -13,7 +13,6 @@ Run train_flywheel_swing.py to trian the swing up and balance version
 of the code. 
 
 To run an animation of the trianed model, run load_trained.py
-
 
 Contact Brendan for details
 
